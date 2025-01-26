@@ -1,0 +1,40 @@
+.Component {
+  width: 50vw;
+  background-color: azure;
+  border-radius: 8px;
+  padding: 3vh;
+  z-index: 100;
+  height: 35vh;
+  margin-right: auto;
+  margin-left: auto;
+  margin-bottom: 2vh;
+}
+
+.head {
+  color: rgb(66, 66, 66);
+}
+
+.tit {
+  font-size: medium;
+  font-style: italic;
+  color: rgb(99, 99, 99);
+}
+
+.span {
+  color: rgb(66, 66, 66);
+  font-size: xx-small;
+}
+
+.Content {
+  display: flex;
+  flex-direction: row;
+  height: 20vh;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.CanvasWrapper {
+  width: 45%; /* Each canvas takes 45% of the width */
+  height: 100%;
+  text-align: center;
+}

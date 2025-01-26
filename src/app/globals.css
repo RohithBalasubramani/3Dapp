@@ -40,3 +40,26 @@ a {
     color-scheme: dark;
   }
 }
+
+.App {
+  display: flex;
+}
+
+.asset-library,
+.control-panel,
+.workspace {
+  flex: 1;
+  padding: 10px;
+}
+
+.asset-card {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.dimensions-control label {
+  display: block;
+  margin: 5px 0;
+}
