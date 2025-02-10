@@ -6,6 +6,8 @@ import AssetLibrary from "@/Components/AssetLibrary";
 import dynamic from "next/dynamic";
 import ClientOnly from "@/Components/ClientOnly";
 import { v4 as uuidv4 } from "uuid";
+import { Leva, useControls } from "leva";
+import BOQ from "@/Components/Boq";
 
 const Workspace = dynamic(() => import("../Components/Workspace"), {
   ssr: false,
@@ -18,6 +20,44 @@ const ControlPanel = dynamic(() => import("@/Components/ControlPanel"), {
 export default function Home() {
   const [assets, setAssets] = useState([]);
   const [selectedAssetId, setSelectedAssetId] = useState(null);
+
+  // {
+  //   "assetAId": [
+  //       { id: "assetBId", offset: { x, y, z } }, // how B is offset from A
+  //       { id: "assetCId", offset: { x, y, z } }
+  //   ],
+  //   "assetBId": [...],
+  //   ...
+  // }
+  const [connections, setConnections] = useState({});
+
+  // const { width } = useControls({
+  //   width: {
+  //     value: 4,
+  //     min: 0,
+  //     max: 10,
+  //     step: 1,
+  //   },
+  // });
+  // const { height } = useControls({
+  //   height: {
+  //     value: 4,
+  //     min: 0,
+  //     max: 10,
+  //     step: 1,
+  //   },
+  // });
+
+  // const { depth } = useControls({
+  //   depth: {
+  //     value: 4,
+  //     min: 0,
+  //     max: 10,
+  //     step: 1,
+  //   },
+  // });
+
+  // const selectedDimension = { width, height, depth };
 
   const addAsset = (assetType) => {
     const newPosition = getNextPosition(); // Calculate position to avoid overlap
@@ -59,7 +99,11 @@ export default function Home() {
           selectedAssetId={selectedAssetId}
           onSelectAsset={setSelectedAssetId}
           onUpdateAsset={updateAsset}
+          connections={connections}
+          setConnections={setConnections}
         />
+        <BOQ assets={assets} />
+
         {selectedAsset && (
           <ControlPanel
             selectedAsset={selectedAsset}
@@ -69,6 +113,7 @@ export default function Home() {
           />
         )}
       </ClientOnly>
+      {/* <Leva collapsed={false} /> */}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React from "react";
 
-function DimensionsControl({ dimensions, onChange }) {
+function DimensionsControl({ dimensions, onChange, selectedDimension }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     onChange({ ...dimensions, [name]: parseFloat(value) });

@@ -1,4 +1,3 @@
-// Asset.js
 import React, { useRef } from "react";
 import { Box, Cylinder } from "@react-three/drei";
 import LShapedDuct from "./LShape";
@@ -8,6 +7,13 @@ function Asset({ asset, isSelected, onSelect }) {
 
   // Set color based on selection status
   const materialColor = isSelected ? "orange" : "blue";
+
+  // Convert rotation degrees to radians
+  const rotation = [
+    (asset.rotation?.rotX || 0) * (Math.PI / 180),
+    (asset.rotation?.rotY || 0) * (Math.PI / 180),
+    (asset.rotation?.rotZ || 0) * (Math.PI / 180),
+  ];
 
   // Attach asset data to `userData` for access in drag events
   if (assetRef.current) {
@@ -25,6 +31,7 @@ function Asset({ asset, isSelected, onSelect }) {
             asset.dimensions.depth,
           ]}
           position={[asset.position.x, asset.position.y, asset.position.z]}
+          rotation={rotation} // Apply rotation
           onClick={(e) => {
             e.stopPropagation();
             onSelect();
@@ -43,6 +50,7 @@ function Asset({ asset, isSelected, onSelect }) {
             32,
           ]}
           position={[asset.position.x, asset.position.y, asset.position.z]}
+          rotation={rotation} // Apply rotation
           onClick={(e) => {
             e.stopPropagation();
             onSelect();

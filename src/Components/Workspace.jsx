@@ -1,18 +1,40 @@
 "use client";
 
-// Workspace.js
-import React, { useRef, useEffect } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import React, { useState } from "react";
+import { Canvas } from "@react-three/fiber";
 import {
   OrbitControls,
   GizmoHelper,
   GizmoViewport,
   Grid,
+  Line,
 } from "@react-three/drei";
-
+import { Leva, useControls } from "leva";
 import AssetDragControls from "./AsssetDrag";
 
-function Workspace({ assets, selectedAssetId, onSelectAsset, onUpdateAsset }) {
+function Workspace({
+  assets,
+  selectedAssetId,
+  onSelectAsset,
+  onUpdateAsset,
+  connections,
+  setConnections,
+}) {
+  // Leva Controls for Zoom
+  const { zoom } = useControls("Camera", {
+    zoom: { value: 5, min: 1, max: 20, step: 0.1 },
+  });
+
+  // Leva Controls for Room Dimensions
+  const { roomWidth, roomHeight, roomDepth } = useControls("Room Dimensions", {
+    roomWidth: { value: 10, min: 5, max: 50, step: 1 },
+    roomHeight: { value: 5, min: 2, max: 20, step: 1 },
+    roomDepth: { value: 10, min: 5, max: 50, step: 1 },
+  });
+
+  // State to hold the OrbitControls instance once available
+  const [controls, setControls] = useState(null);
+
   return (
     <div
       className="workspace"
@@ -20,34 +42,88 @@ function Workspace({ assets, selectedAssetId, onSelectAsset, onUpdateAsset }) {
         width: "90vw",
         height: "100vh",
         backgroundColor: "black",
-        marginRight: "auto",
-        marginLeft: "auto",
+        margin: "0 auto",
       }}
     >
-      <Canvas camera={{ position: [5, 5, 5] }}>
+      <Canvas camera={{ position: [zoom, zoom, zoom] }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={1} />
-        <OrbitControls />
+
+        {/* Capture the OrbitControls instance via a callback ref */}
+        <OrbitControls
+          makeDefault
+          ref={(instance) => {
+            if (instance) {
+              setControls(instance);
+            }
+          }}
+        />
+
         <Ground />
+        <RoomBorder width={roomWidth} height={roomHeight} depth={roomDepth} />
+
         <AssetDragControls
           assets={assets}
           selectedAssetId={selectedAssetId}
           onSelectAsset={onSelectAsset}
           onUpdateAsset={onUpdateAsset}
         />
-        <GizmoHelper alignment="bottom-right">
-          <GizmoViewport
-            axisColors={["red", "green", "blue"]}
-            labelColor="black"
-          />
-        </GizmoHelper>
+
+        {/* Render the gizmo only once we have a valid controls instance */}
+        {controls && (
+          <GizmoHelper
+            alignment="bottom-right"
+            margin={[80, 80]}
+            controls={controls}
+          >
+            <GizmoViewport
+              axisColors={["red", "green", "blue"]}
+              labelColor="white"
+            />
+          </GizmoHelper>
+        )}
       </Canvas>
+      <Leva collapsed={false} />
     </div>
   );
 }
 
 export default Workspace;
 
+// Renders the room borders using lines
+function RoomBorder({ width, height, depth }) {
+  const points = [
+    [-width / 2, 0, -depth / 2],
+    [width / 2, 0, -depth / 2],
+    [width / 2, 0, depth / 2],
+    [-width / 2, 0, depth / 2],
+    [-width / 2, 0, -depth / 2],
+  ];
+
+  return (
+    <group>
+      <Line points={points} color="white" lineWidth={2} />
+      <Line
+        points={points.map(([x, y, z]) => [x, height, z])}
+        color="white"
+        lineWidth={2}
+      />
+      {points.slice(0, 4).map(([x, y, z], index) => (
+        <Line
+          key={index}
+          points={[
+            [x, y, z],
+            [x, height, z],
+          ]}
+          color="white"
+          lineWidth={2}
+        />
+      ))}
+    </group>
+  );
+}
+
+// Configures and renders the ground grid
 function Ground() {
   const gridConfig = {
     cellSize: 0.5,
