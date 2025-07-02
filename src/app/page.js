@@ -8,6 +8,7 @@ import ClientOnly from "@/Components/ClientOnly";
 import { v4 as uuidv4 } from "uuid";
 import { Leva, useControls } from "leva";
 import BOQ from "@/Components/Boq";
+import { ModelList } from "@/Components/ModelList";
 
 const Workspace = dynamic(() => import("../Components/Workspace"), {
   ssr: false,
@@ -103,7 +104,7 @@ export default function Home() {
           setConnections={setConnections}
         />
         <BOQ assets={assets} />
-
+        <ModelList />
         {selectedAsset && (
           <ControlPanel
             selectedAsset={selectedAsset}

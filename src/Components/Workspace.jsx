@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import {
   OrbitControls,
@@ -11,6 +11,11 @@ import {
 } from "@react-three/drei";
 import { Leva, useControls } from "leva";
 import AssetDragControls from "./AsssetDrag";
+import Camera from "./Camera";
+import Cube, { Cubes, useCubeStore } from "./Cube";
+import { Physics } from "@react-three/cannon";
+import STLModel, { Cursor, Models } from "./STLModel";
+import { ModelList } from "./ModelList";
 
 function Workspace({
   assets,
@@ -38,17 +43,18 @@ function Workspace({
   return (
     <div
       className="workspace"
+      id="workspace"
       style={{
         width: "90vw",
-        height: "100vh",
-        backgroundColor: "black",
+        height: "95vh",
+        backgroundColor: "white",
         margin: "0 auto",
       }}
     >
-      <Canvas camera={{ position: [zoom, zoom, zoom] }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={1} />
-
+        {/* <Camera /> */}
         {/* Capture the OrbitControls instance via a callback ref */}
         <OrbitControls
           makeDefault
@@ -61,7 +67,14 @@ function Workspace({
 
         <Ground />
         <RoomBorder width={roomWidth} height={roomHeight} depth={roomDepth} />
-
+        <Physics>
+          {/* <Cube position={[0, 0, 0]} />
+          <Cubes /> */}
+        </Physics>
+        <Suspense fallback={null}>
+          <Models />
+          <Cursor />
+        </Suspense>
         <AssetDragControls
           assets={assets}
           selectedAssetId={selectedAssetId}
