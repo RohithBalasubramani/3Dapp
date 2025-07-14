@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useRef, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import {
   OrbitControls,
@@ -10,14 +10,14 @@ import {
   Line,
 } from "@react-three/drei";
 import { Leva, useControls } from "leva";
-import AssetDragControls from "./AsssetDrag";
-import Camera from "./Camera";
-import Cube, { Cubes, useCubeStore } from "./Cube";
 import { Physics } from "@react-three/cannon";
-import STLModel, { Cursor, Models } from "./STLModel";
-import { ModelList } from "./ModelList";
 
-function Workspace({
+import AssetDragControls from "./AsssetDrag";
+import STLModel, { Cursor, Models } from "./STLModel";
+/* ⬇️  FIXED: import the store from its new location */
+import { useSTLStore } from "@/store/stlStore";
+
+export default function Workspace({
   assets,
   selectedAssetId,
   onSelectAsset,
@@ -25,56 +25,67 @@ function Workspace({
   connections,
   setConnections,
 }) {
-  // Leva Controls for Zoom
+  /* Leva knobs */
   const { zoom } = useControls("Camera", {
     zoom: { value: 5, min: 1, max: 20, step: 0.1 },
   });
-
-  // Leva Controls for Room Dimensions
   const { roomWidth, roomHeight, roomDepth } = useControls("Room Dimensions", {
     roomWidth: { value: 10, min: 5, max: 50, step: 1 },
     roomHeight: { value: 5, min: 2, max: 20, step: 1 },
     roomDepth: { value: 10, min: 5, max: 50, step: 1 },
   });
 
-  // State to hold the OrbitControls instance once available
-  const [controls, setControls] = useState(null);
+  const canvasRef = useRef();
+  const dragging = useSTLStore((s) => s.dragging);
+  const finishDrag = useSTLStore((s) => s.finishDrag);
+  const [controls, setCtrl] = useState(null);
+
+  /* lock rotation while dragging */
+  useEffect(() => {
+    if (controls) controls.enableRotate = !dragging;
+  }, [dragging, controls]);
+
+  /* cancel drag if pointer leaves canvas */
+  function handleLeave() {
+    if (dragging) finishDrag();
+  }
 
   return (
     <div
-      className="workspace"
       id="workspace"
       style={{
         width: "90vw",
         height: "95vh",
-        backgroundColor: "white",
+        background: "white",
         margin: "0 auto",
       }}
     >
-      <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+      <Canvas
+        ref={canvasRef}
+        camera={{ position: [0, 0, 5], fov: 60 }}
+        onPointerLeave={handleLeave}
+      >
+        {/* lights */}
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={1} />
-        {/* <Camera /> */}
-        {/* Capture the OrbitControls instance via a callback ref */}
-        <OrbitControls
-          makeDefault
-          ref={(instance) => {
-            if (instance) {
-              setControls(instance);
-            }
-          }}
-        />
 
+        {/* drag ghost & placed STLs */}
+        <Suspense fallback={null}>
+          <Cursor />
+          <Models />
+        </Suspense>
+
+        {/* orbit controls */}
+        <OrbitControls makeDefault ref={setCtrl} />
+
+        {/* grid + room outline */}
         <Ground />
         <RoomBorder width={roomWidth} height={roomHeight} depth={roomDepth} />
-        <Physics>
-          {/* <Cube position={[0, 0, 0]} />
-          <Cubes /> */}
-        </Physics>
-        <Suspense fallback={null}>
-          <Models />
-          <Cursor />
-        </Suspense>
+
+        {/* physics sandbox for your cubes or other assets */}
+        <Physics>{/* … */}</Physics>
+
+        {/* existing asset handles */}
         <AssetDragControls
           assets={assets}
           selectedAssetId={selectedAssetId}
@@ -82,7 +93,7 @@ function Workspace({
           onUpdateAsset={onUpdateAsset}
         />
 
-        {/* Render the gizmo only once we have a valid controls instance */}
+        {/* axis gizmo */}
         {controls && (
           <GizmoHelper
             alignment="bottom-right"
@@ -96,34 +107,32 @@ function Workspace({
           </GizmoHelper>
         )}
       </Canvas>
+
       <Leva collapsed={false} />
     </div>
   );
 }
 
-export default Workspace;
-
-// Renders the room borders using lines
+/* ---------- helpers (unchanged) ------------------- */
 function RoomBorder({ width, height, depth }) {
-  const points = [
+  const pts = [
     [-width / 2, 0, -depth / 2],
     [width / 2, 0, -depth / 2],
     [width / 2, 0, depth / 2],
     [-width / 2, 0, depth / 2],
     [-width / 2, 0, -depth / 2],
   ];
-
   return (
     <group>
-      <Line points={points} color="white" lineWidth={2} />
+      <Line points={pts} color="white" lineWidth={2} />
       <Line
-        points={points.map(([x, y, z]) => [x, height, z])}
+        points={pts.map(([x, , z]) => [x, height, z])}
         color="white"
         lineWidth={2}
       />
-      {points.slice(0, 4).map(([x, y, z], index) => (
+      {pts.slice(0, 4).map(([x, y, z], i) => (
         <Line
-          key={index}
+          key={i}
           points={[
             [x, y, z],
             [x, height, z],
@@ -136,9 +145,8 @@ function RoomBorder({ width, height, depth }) {
   );
 }
 
-// Configures and renders the ground grid
 function Ground() {
-  const gridConfig = {
+  const cfg = {
     cellSize: 0.5,
     cellThickness: 0.5,
     cellColor: "#6f6f6f",
@@ -150,5 +158,5 @@ function Ground() {
     followCamera: false,
     infiniteGrid: true,
   };
-  return <Grid position={[0, -0.01, 0]} args={[10.5, 10.5]} {...gridConfig} />;
+  return <Grid position={[0, -0.01, 0]} args={[10.5, 10.5]} {...cfg} />;
 }
