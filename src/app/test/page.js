@@ -10,7 +10,7 @@ export default function TestPage() {
   const modelsDir = path.join(process.cwd(), "public/models");
   const files = fs
     .readdirSync(modelsDir)
-    .filter((f) => f.toLowerCase().endsWith(".stl"))
+    .filter((f) => f.toLowerCase().endsWith(".3MF"))
     .map((f) => `/models/${f}`);
 
   /* stream list down to the client component */
