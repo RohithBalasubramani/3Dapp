@@ -4,10 +4,11 @@ import { Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { useState } from "react";
 import { useSTLStore } from "@/store/stlStore";
+import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader";
 
 export default function ModelChooser() {
   /* global store slices */
-  const fileList = useSTLStore((s) => s.fileList);
+  const fileList = ["/models/I.PLY", "/models/demo2.PLY", "/models/Z.PLY"];
   const pendingAttach = useSTLStore((s) => s.pendingAttach);
   const addModel = useSTLStore((s) => s.addModel);
   const clearPending = useSTLStore((s) => s.setPendingAttach);
@@ -21,15 +22,47 @@ export default function ModelChooser() {
   function pick(fileUrl) {
     setBusy(true);
 
-    new STLLoader().load(fileUrl, (geom) => {
+    new PLYLoader().load(fileUrl, (geom) => {
       geom.computeVertexNormals();
       geom.computeBoundingBox();
       geom.center();
+      geom.scale(0.001, 0.001, 0.001)
 
       /* 🔑 grab the *current* pendingAttach safely */
       const attach = useSTLStore.getState().pendingAttach;
-      if (attach && attach.pos) {
-        addModel(...attach.pos, geom);
+      const newShape = fileUrl.split("/")[2].split(".")[0];
+      let pos = [];
+      if (attach && attach.worldCenter) {
+        // if (attach.currShape === "Z" && newShape === "Z") {
+        //   if (attach.negativeX) {
+        //     pos = [
+        //       attach.worldCenter.x - attach.size.x * 0.001,
+        //       attach.worldCenter.y,
+        //       attach.worldCenter.z + attach.size.z * 0.001 * (2 / 3) + 0.03,
+        //     ];
+        //   } else {
+        //     pos = [
+        //       attach.worldCenter.x + attach.size.x * 0.001,
+        //       attach.worldCenter.y,
+        //       attach.worldCenter.z - attach.size.z * 0.001 * (2 / 3) - 0.03,
+        //     ];
+        //   }
+        // } else if (attach.currShape === "Z" && newShape === "I") {
+        //   if (attach.negativeX) {
+        //     pos = [
+        //       attach.worldCenter.x - attach.size.x * 0.001,
+        //       attach.worldCenter.y,
+        //       attach.worldCenter.z + attach.size.z * 0.001 * (2 / 3) + 0.03,
+        //     ];
+        //   } else {
+        //     pos = [
+        //       attach.worldCenter.x + attach.size.x * 0.001,
+        //       attach.worldCenter.y,
+        //       attach.worldCenter.z - attach.size.z * 0.001 * (2 / 3) - 0.03,
+        //     ];
+        //   }
+        // }
+        addModel(attach.worldCenter.x*0.001, attach.worldCenter.y*0.001 ,attach.worldCenter.z*0.001 , geom, newShape);
         clearPending(null);
       }
 

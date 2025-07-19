@@ -26,6 +26,7 @@ export default function ClientApp({ files }) {
   /* share the STL file list with the global store (for ModelChooser) */
   const setFileList = useSTLStore((s) => s.setFileList);
   useEffect(() => {
+    console.log("files", files)
     setFileList(files);
   }, [files, setFileList]);
 
@@ -43,7 +44,7 @@ export default function ClientApp({ files }) {
   return (
     <div className={styles.page}>
       {/* thumbnail picker (drag OR face-attach) */}
-      <ModelList files={files} />
+      <ModelList />
 
       <ClientOnly>
         <Workspace

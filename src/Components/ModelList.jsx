@@ -4,6 +4,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { useEffect, useRef, useState, memo } from "react";
 import { useSTLStore } from "@/store/stlStore"; /* ← CHANGED */
+import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader';
 
 /* ───────────────────────────────────────────────────────────
    IconMesh – spins a tiny preview
@@ -27,11 +28,12 @@ const ModelIcon = memo(function ModelIcon({ url }) {
   const [geometry, setGeometry] = useState(null);
 
   useEffect(() => {
-    new STLLoader().load(url, (g) => {
+    new PLYLoader().load(url, (g) => {
       g.computeVertexNormals();
       g.computeBoundingBox();
       g.center();
-      setGeometry(g);
+      //g.scale(0.001, 0.001, 0.001);
+      setGeometry({geo: g, shape: url.split("/")[2].split(".")[0]});
     });
   }, [url]);
 
@@ -44,12 +46,13 @@ const ModelIcon = memo(function ModelIcon({ url }) {
 
     if (pending) {
       /* snap to face */
-      store.addModel(...pending.pos, geometry.clone());
+      store.addModel(...pending.pos, geometry.geo.clone(), geometry.shape);
       store.setPendingAttach(null);
     } else {
       /* start drag */
-      const g = geometry.clone();
-      store.startDrag(g, [0.001, 0.001, 0.001]);
+      const g = geometry.geo.clone();
+      g.scale(0.001, 0.001, 0.001)
+      store.startDrag(g, [0.001, 0.001, 0.001], geometry.shape);
       store.setSelectedModel({ geometry: g });
     }
   };
@@ -70,7 +73,7 @@ const ModelIcon = memo(function ModelIcon({ url }) {
       <Canvas camera={{ position: [0, 0, 3] }} dpr={[1, 2]}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[2, 2, 2]} intensity={0.8} />
-        {geometry && <IconMesh geometry={geometry} />}
+        {geometry && <IconMesh geometry={geometry.geo} />}
       </Canvas>
     </div>
   );
@@ -79,7 +82,7 @@ const ModelIcon = memo(function ModelIcon({ url }) {
 /* ───────────────────────────────────────────────────────────
    Grid of thumbnails
    ───────────────────────────────────────────────────────── */
-function ModelList({ files = [] }) {
+function ModelList({ files = ["/models/I.PLY", "/models/demo2.PLY", "/models/Z.PLY"] }) {
   return (
     <div
       style={{
