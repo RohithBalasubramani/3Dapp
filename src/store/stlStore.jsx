@@ -4,8 +4,8 @@ import { create } from "zustand";
 export const useSTLStore = create((set) => ({
   /* placed meshes */
   models: [],
-  addModel: (x, y, z, geo) =>
-    set((s) => ({ models: [...s.models, { pos: [x, y, z], geo }] })),
+  addModel: (x, y, z, geo, shape) =>
+    set((s) => ({ models: [...s.models, { pos: [x, y, z], geo, shape }] })),
 
   /* thumbnail drag needs this */
   selectedModel: null,
@@ -13,7 +13,7 @@ export const useSTLStore = create((set) => ({
 
   /* drag-and-drop */
   dragging: null,
-  startDrag: (geo, scale) => set({ dragging: { geo, scale } }),
+  startDrag: (geo, scale, shape) => set({ dragging: { geo, scale, shape } }),
   finishDrag: () => set({ dragging: null }),
 
   /* face-attach flow */
