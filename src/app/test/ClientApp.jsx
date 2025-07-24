@@ -12,6 +12,7 @@ import ModelList from "@/Components/ModelList";
 import BOQ from "@/Components/Boq";
 import ClientOnly from "@/Components/ClientOnly";
 import { useSTLStore } from "@/store/stlStore"; // NEW
+import Topbar from "@/Components/TopBar";
 
 /* heavy R3F bundles */
 const Workspace = dynamic(() => import("@/Components/Workspace"), {
@@ -26,7 +27,7 @@ export default function ClientApp({ files }) {
   /* share the STL file list with the global store (for ModelChooser) */
   const setFileList = useSTLStore((s) => s.setFileList);
   useEffect(() => {
-    console.log("files", files)
+    console.log("files", files);
     setFileList(files);
   }, [files, setFileList]);
 
@@ -44,6 +45,7 @@ export default function ClientApp({ files }) {
   return (
     <div className={styles.page}>
       {/* thumbnail picker (drag OR face-attach) */}
+      <Topbar styles={{ width: "100vw" }} />
       <ModelList />
 
       <ClientOnly>

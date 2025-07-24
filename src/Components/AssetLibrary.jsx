@@ -5,7 +5,10 @@ import LShapedDuct from "./LShape";
 
 function Box({ position, onClick }) {
   const meshRef = useRef();
-  useFrame((state, delta) => (meshRef.current.rotation.x += delta));
+  useFrame((state, delta) => {
+    meshRef.current.rotation.x += delta;
+    meshRef.current.rotation.y += delta;
+  });
 
   return (
     <mesh position={position} ref={meshRef} scale={1} onClick={onClick}>
@@ -41,7 +44,7 @@ function AssetLibrary({ onAddAsset }) {
               decay={0}
               intensity={Math.PI}
             />
-            <Box position={[-1.2, 0, 0]} onClick={() => onAddAsset("Duct")} />
+            <Box position={[0, 0, 0]} onClick={() => onAddAsset("Duct")} />
           </Canvas>
           <span className={styles.span}>Add Normal Bus Duct</span>
         </div>
@@ -63,7 +66,7 @@ function AssetLibrary({ onAddAsset }) {
               intensity={Math.PI}
             />
             <LShapedDuct
-              position={[1.2, 0, 0]}
+              position={[0, 0, 0]}
               onClick={() => onAddAsset("L_Shaped")}
             />
           </Canvas>
