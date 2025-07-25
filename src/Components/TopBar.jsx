@@ -8,7 +8,7 @@ export default function Topbar() {
   return (
     <nav className="fixed top-0 left-0 w-full bg-gray-950/80 backdrop-blur-lg shadow-lg z-50">
       {/* inner wrapper keeps everything aligned and max‑width constrained */}
-      <div className="mx-auto max-w-screen-2xl h-[12vh] min-h-16 flex items-center px-6 lg:px-12 relative">
+      <div className="mx-auto w-full h-[12vh] min-h-16 flex flex-row items-center justify-between px-6 lg:px-12 relative">
         {/* ── Left: App logo ─────────────────────────────── */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           {/* Replace with your real SVG if you have one */}

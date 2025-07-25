@@ -45,7 +45,7 @@ export default function ClientApp({ files }) {
   return (
     <div className={styles.page}>
       {/* thumbnail picker (drag OR face-attach) */}
-      <Topbar styles={{ width: "100vw" }} />
+      {/* <Topbar styles={{ width: "100vw" }} /> */}
       <ModelList />
 
       <ClientOnly>
