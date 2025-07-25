@@ -58,8 +58,7 @@ export default function ClientApp({ files }) {
           setConnections={setConnections}
         />
 
-        <BOQ assets={assets} />
-
+        <BOQ />
         {selectedAsset && (
           <ControlPanel
             selectedAsset={selectedAsset}

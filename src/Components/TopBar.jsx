@@ -9,18 +9,16 @@ export default function Topbar() {
     <nav className="fixed top-0 left-0 w-full bg-gray-950/80 backdrop-blur-lg shadow-lg z-50">
       {/* inner wrapper keeps everything aligned and max‑width constrained */}
       <div className="mx-auto w-full h-[12vh] min-h-16 flex flex-row items-center justify-between px-6 lg:px-12 relative">
-        {/* ── Left: App logo ─────────────────────────────── */}
+        {/*  Left: App logo  */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           {/* Replace with your real SVG if you have one */}
           <span className="text-3xl">🧠</span>
         </Link>
-
-        {/* ── Center: App name (absolutely centered) ────── */}
+        {/* Center: App name (absolutely centered)  */}
         <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-semibold tracking-wide pointer-events-none">
           Neuraxis
         </h1>
-
-        {/* ── Right: Utility icons ───────────────────────── */}
+        {/*  Right: Utility icons  */}
         <div className="ml-auto flex items-center gap-6">
           {/* BOQ page link */}
           <Link

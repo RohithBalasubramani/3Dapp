@@ -7,19 +7,14 @@ import {
   Grid,
   Plane,
 } from "@react-three/drei";
-import { Leva, useControls } from "leva";
+import { Leva, useControls, useCreateStore } from "leva";
 import { Physics } from "@react-three/cannon";
 import { useSTLStore } from "@/store/stlStore";
 import BoundingBox from "./BoundingBox";
 import Scales from "./Scales";
 
-/*──────────────────────────────────────────
-  AssetControls – folder appears only when a
-  model is selected.  Keyed by id+position so
-  it remounts after any move, giving sliders
-  fresh default values.
-──────────────────────────────────────────*/
-function AssetControls({ model, room, update }) {
+/** AssetControls – in its own Leva store (assetStore) */
+function AssetControls({ model, room, update, store }) {
   const { width, height, depth } = room;
 
   useControls(
@@ -86,26 +81,36 @@ function AssetControls({ model, room, update }) {
           }),
       },
     },
-    { collapsed: false }
+    { store, collapsed: false }
   );
 
   return null;
 }
 
 export default function Workspace() {
-  /* Camera */
-  const { zoom } = useControls("Camera", {
-    zoom: { value: 5, min: 1, max: 20, step: 0.1 },
-  });
+  // two separate Leva stores
+  const roomStore = useCreateStore(); // Camera + Room
+  const assetStore = useCreateStore(); // Selected asset
 
-  /* Room */
-  const { roomWidth, roomHeight, roomDepth } = useControls("Room", {
-    roomWidth: { value: 10, min: 1, max: 50, step: 1 },
-    roomHeight: { value: 5, min: 1, max: 20, step: 1 },
-    roomDepth: { value: 10, min: 1, max: 50, step: 1 },
-  });
+  /* Camera (roomStore) */
+  const { zoom } = useControls(
+    "Camera",
+    { zoom: { value: 5, min: 1, max: 20, step: 0.1 } },
+    { store: roomStore }
+  );
 
-  // Sync room dims
+  /* Room dims (roomStore) */
+  const { roomWidth, roomHeight, roomDepth } = useControls(
+    "Room",
+    {
+      roomWidth: { value: 10, min: 1, max: 50, step: 1 },
+      roomHeight: { value: 5, min: 1, max: 20, step: 1 },
+      roomDepth: { value: 10, min: 1, max: 50, step: 1 },
+    },
+    { store: roomStore }
+  );
+
+  // push dims into Zustand
   const setRoomDimensions = useSTLStore((s) => s.setRoomDimensions);
   useEffect(() => {
     setRoomDimensions({
@@ -115,7 +120,7 @@ export default function Workspace() {
     });
   }, [roomWidth, roomHeight, roomDepth, setRoomDimensions]);
 
-  /* Zustand state */
+  /* Drag + selection state */
   const dragging = useSTLStore((s) => s.dragging);
   const draggedModel = useSTLStore((s) => s.draggedModel);
   const models = useSTLStore((s) => s.models);
@@ -158,16 +163,33 @@ export default function Workspace() {
         margin: "0 auto",
       }}
     >
-      <Leva collapsed={false} />
+      {/* Left‑hand panel (always) */}
+      <Leva
+        store={roomStore}
+        collapsed={false}
+        style={{ position: "absolute", top: 10, right: 10, zIndex: 100 }}
+      />
+
+      {/* Right‑hand panel container */}
+      {selectedModel && (
+        <Leva
+          store={assetStore}
+          collapsed={false}
+          style={{ position: "absolute", top: 220, right: 10, zIndex: 100 }}
+        />
+      )}
+
       <Scales />
 
       <Canvas
         camera={{ position: [0, h / 2, d * 1.2], fov: 60, zoom }}
         onPointerLeave={handleLeave}
       >
+        {/* lights */}
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={1} />
 
+        {/* drag planes */}
         {dragging && (
           <group onPointerMove={handleMove} onClick={handlePlace}>
             <Plane
@@ -219,7 +241,7 @@ export default function Workspace() {
             </mesh>
           )}
 
-          {/* placed meshes */}
+          {/* placed models */}
           {models.map((m) => (
             <mesh
               key={m.id}
@@ -251,39 +273,35 @@ export default function Workspace() {
           width={w}
           height={h}
           depth={d}
-          color="#ffffff"
+          color="#fff"
           lineWidth={2}
         />
-        <Grid
-          position={[0, -0.01, 0]}
-          args={[w + 0.5, d + 0.5]}
-          cellColor="#6f6f6f"
-          sectionColor="#9d4b4b"
-          infiniteGrid
-        />
+        <Grid position={[0, -0.01, 0]} args={[w + 0.5, d + 0.5]} infiniteGrid />
 
         <OrbitControls ref={orbitRef} makeDefault />
-        {orbitRef.current && (
-          <GizmoHelper
-            alignment="bottom-right"
-            margin={[80, 80]}
-            controls={orbitRef.current}
-          >
-            <GizmoViewport
-              axisColors={["red", "green", "blue"]}
-              labelColor="white"
-            />
-          </GizmoHelper>
-        )}
+        {/* always render gizmo */}
+        <GizmoHelper
+          alignment="bottom-right"
+          margin={[80, 80]}
+          controls={orbitRef.current}
+        >
+          <GizmoViewport
+            axisColors={["red", "green", "blue"]}
+            labelColor="white"
+          />
+        </GizmoHelper>
+
         <Physics />
       </Canvas>
 
+      {/* mount AssetControls so sliders appear below the first panel */}
       {selectedModel && (
         <AssetControls
           key={`${selectedModel.id}-${selectedModel.position.join(",")}`}
           model={selectedModel}
           room={{ width: roomWidth, height: roomHeight, depth: roomDepth }}
           update={updateModel}
+          store={assetStore}
         />
       )}
     </div>

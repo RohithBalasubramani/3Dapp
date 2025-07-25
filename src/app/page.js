@@ -18,8 +18,11 @@ const ControlPanel = dynamic(() => import("@/Components/ControlPanel"), {
   ssr: false,
 });
 
+import { useSTLStore } from "@/store/stlStore";
+
 export default function Home() {
-  const [assets, setAssets] = useState([]);
+  const assets = useSTLStore((s) => s.models) ?? [];
+  console.log("Page assets:", assets);
   const [selectedAssetId, setSelectedAssetId] = useState(null);
 
   // {
@@ -61,6 +64,7 @@ export default function Home() {
   // const selectedDimension = { width, height, depth };
 
   const addAsset = (assetType) => {
+    console.log("Adding asset:", assetType);
     const newPosition = getNextPosition(); // Calculate position to avoid overlap
     const newAsset = {
       id: uuidv4(),
@@ -93,8 +97,8 @@ export default function Home() {
 
   return (
     <div className={styles.page}>
-      <AssetLibrary onAddAsset={addAsset} />
       <ClientOnly>
+        <AssetLibrary onAddAsset={addAsset} />
         <Workspace
           assets={assets}
           selectedAssetId={selectedAssetId}

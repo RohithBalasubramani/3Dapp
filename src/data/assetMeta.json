@@ -1,0 +1,23 @@
+[
+  {
+    "shape": "straight-busbar",
+    "label": "Straight Busbar",
+    "unit": "piece",
+    "unitPrice": 1200.0,
+    "length_mm": 1000
+  },
+  {
+    "shape": "z-busbar",
+    "label": "Z‑Shaped Busbar",
+    "unit": "piece",
+    "unitPrice": 1500.0,
+    "length_mm": 1200
+  },
+  {
+    "shape": "connector",
+    "label": "Connector",
+    "unit": "piece",
+    "unitPrice": 200.0,
+    "length_mm": 50
+  }
+]

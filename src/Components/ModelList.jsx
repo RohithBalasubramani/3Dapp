@@ -84,9 +84,7 @@ const ModelIcon = memo(function ModelIcon({ url }) {
    Grid of thumbnails wrapped in a translucent panel
    with a dummy dropdown at its top‑right
    ──────────────────────────────────────────────── */
-export default function ModelList({
-  files = ["/models/I.PLY", "/models/demo2.PLY", "/models/Z.PLY"],
-}) {
+export default function ModelList(files) {
   return (
     <div
       style={{
