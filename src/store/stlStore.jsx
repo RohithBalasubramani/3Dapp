@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export const useSTLStore = create((set, get) => ({
   models: [],
-  addModel: (x, y, z, geo, shape) =>
+  addModel: (x, y, z, geo, shape, rotation) =>
     set((s) => ({
       models: [
         ...s.models,
@@ -11,6 +11,7 @@ export const useSTLStore = create((set, get) => ({
           position: [x, y, z],
           geometry: geo,
           shape: shape,
+          rotation,
           scale: [1, 1, 1],
           distWallNegX: 0,
           distWallPosX: 0,
@@ -32,6 +33,9 @@ export const useSTLStore = create((set, get) => ({
 
   selectedAssetId: null,
   setSelectedAssetId: (id) => set({ selectedAssetId: id }),
+
+  selectedModel: null,
+  setSelectedModel: (model) => set({ selectedModel: model }),
 
   // Drag-and-drop state
   dragging: false,
@@ -56,7 +60,10 @@ export const useSTLStore = create((set, get) => ({
     set((state) => ({
       dragging: false,
       draggedModel: null,
-      models: [...state.models, { ...draggedModel, id: state.models.length + 1 }],
+      models: [
+        ...state.models,
+        { ...draggedModel, id: state.models.length + 1 },
+      ],
       selectedAssetId: state.models.length + 1,
     }));
   },
@@ -72,6 +79,12 @@ export const useSTLStore = create((set, get) => ({
 
   finishDrag: () => set({ dragging: false, draggedModel: null }),
 
+  pendingAttach: null, // { pos, scale }
+  setPendingAttach: (p) => set({ pendingAttach: p }),
+
   fileList: [],
   setFileList: (files) => set({ fileList: files }),
+  snapModel: null,
+  setSnapModel: (snap) => set({ snapModel: snap }),
+  clearSnapModel: () => set({ snapModel: null }),
 }));

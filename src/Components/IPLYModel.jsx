@@ -8,7 +8,12 @@ import { useThree } from "@react-three/fiber";
 import { useSTLStore } from "@/store/stlStore";
 import ModelChooser from "./ModelChooser";
 
-export default function IModel({ geom, position, shape }) {
+export default function IModel({
+  geom,
+  position,
+  shape,
+  rotation = [0, 0, 0],
+}) {
   const meshRef = useRef();
   const [size, setSize] = useState(null);
   const [center, setCenter] = useState(null);
@@ -49,7 +54,7 @@ export default function IModel({ geom, position, shape }) {
       .normalize();
 
     // 2. Mesh's local +X direction in world space
-    const worldLocalY = new THREE.Vector3(0, 1, 0)
+    const worldLocalY = new THREE.Vector3(0, 0, 1)
       .applyQuaternion(mesh.getWorldQuaternion(new THREE.Quaternion()))
       .normalize();
 
@@ -58,14 +63,14 @@ export default function IModel({ geom, position, shape }) {
     const angleToNegY = faceNormal.angleTo(worldLocalY.clone().negate());
     const ANGLE_TOLERANCE = THREE.MathUtils.degToRad(10);
 
-     if (angleToNegY === 0 || angleToY ===0){
-      gl.domElement.style.cursor = 'crosshair'
-     }
+    if (angleToNegY === 0 || angleToY === 0) {
+      gl.domElement.style.cursor = "crosshair";
+    }
 
     setHover(Math.floor(e.faceIndex / 2));
   }, []);
   const onOut = useCallback(() => {
-    gl.domElement.style.cursor = 'default'
+    gl.domElement.style.cursor = "default";
   }, []);
 
   const onFaceClick = useCallback(
@@ -76,111 +81,106 @@ export default function IModel({ geom, position, shape }) {
 
       mesh.updateMatrixWorld(true);
 
-      // 1. Face normal in world space
+      const geom = mesh.geometry;
+      const pos = geom.attributes.position;
+      const bbox = new THREE.Box3().setFromObject(mesh);
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+
+      bbox.getCenter(center);
+      bbox.getSize(size);
+
       const faceNormal = e.face.normal
         .clone()
         .transformDirection(mesh.matrixWorld)
         .normalize();
 
-      // 2. Mesh's local +X direction in world space
-      const worldLocalX = new THREE.Vector3(0, 1, 0)
-        .applyQuaternion(mesh.getWorldQuaternion(new THREE.Quaternion()))
-        .normalize();
+      console.log("Mesh Rotation:", mesh.rotation);
+      console.log("Face Normal (local):", e.face.normal);
+      console.log("Face Normal (world):", faceNormal);
 
-      // 3. Compare face normal to local +X and -X
-      const angleToX = faceNormal.angleTo(worldLocalX);
-      const angleToNegX = faceNormal.angleTo(worldLocalX.clone().negate());
-      const ANGLE_TOLERANCE = THREE.MathUtils.degToRad(10);
-
-      if (angleToX > ANGLE_TOLERANCE && angleToNegX > ANGLE_TOLERANCE) {
-        console.log("❌ Not aligned with local ±X");
-        return;
-      }
-
-      console.log("angleToX", angleToX);
-      console.log("angleToNegX", angleToNegX);
-      console.log("ANGLE_TOLERANCE", ANGLE_TOLERANCE);
-
-      // 4. Compute spawn position slightly outside the face
-      const clickPoint = e.point.clone();
-      const offset = 0.001;
-      const spawnPos = clickPoint.add(
-        faceNormal.clone().multiplyScalar(offset)
+      const faceCenterWorld = getWorldFaceCenterFromBoundingBox(
+        mesh,
+        faceNormal
       );
 
-      // 5. Add model
-      const size = new THREE.Vector3();
-      mesh.geometry.computeBoundingBox();
-      mesh.geometry.boundingBox.getSize(size);
-      const center = new THREE.Vector3();
-      mesh.geometry.boundingBox.getCenter(center);
-      const worldCenter = center.clone().applyMatrix4(mesh.matrixWorld);
-      console.log("worldcenter", worldCenter);
-      console.log(size);
-      const newCenter = new THREE.Vector3(
-        center.x - size.x * 0.001,
-        center.y,
-        center.z + size.z * 0.001 - 0.01
-      );
-      console.log("newCenter", newCenter);
+      // Check direction of click relative to normal
+      const rayDir = e.ray.direction.clone().normalize();
+      const dot = faceNormal.dot(rayDir);
 
-      // worldCenter.applyAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
-      newCenter.applyAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
+      // If dot > 0, normal points away from camera — flip it
+      const offsetDir =
+        dot > 0 ? faceNormal.clone().negate() : faceNormal.clone();
 
-      // console.log("rot world center", worldCenter);
-      console.log("rot new center", newCenter);
+      //scene.add(new THREE.PlaneHelper(dragPlane, 5, 0xff0000));
 
-      if (angleToNegX === 0) {
-        useSTLStore
-          .getState()
-          .addModel(
-            worldCenter.x - size.x * 0.001,
-            worldCenter.y,
-            worldCenter.z + size.z * 0.001 * (2 / 3) + 0.03,
-            geom
-          );
+      // Get u, v tangent vectors
+      let tempUp = new Vector3(0, 1, 0);
+      if (Math.abs(faceNormal.dot(tempUp)) > 0.9) {
+        tempUp = new Vector3(1, 0, 0);
       }
+      const u = new Vector3().crossVectors(tempUp, faceNormal).normalize();
+      const v = new Vector3().crossVectors(faceNormal, u).normalize();
 
-      if (angleToX === 0) {
-        useSTLStore
-          .getState()
-          .addModel(
-            worldCenter.x + size.x * 0.001,
-            worldCenter.y,
-            worldCenter.z - size.z * 0.001 * (2 / 3) - 0.03,
-            geom
-          );
-      }
+      const uLimit = size.length() / 3; // or more precise method
+      const vLimit = size.length() / 1000;
+
+      // // 1. Face center - red sphere
+      // const faceCenterHelper = new THREE.Mesh(
+      //   new THREE.SphereGeometry(0.01), // adjust radius as needed
+      //   new THREE.MeshBasicMaterial({ color: "red" })
+      // );
+      // faceCenterHelper.position.copy(faceCenterWorld);
+      // scene.add(faceCenterHelper);
+
+      // // 2. Face normal - green arrow
+      // const normalArrow = new THREE.ArrowHelper(
+      //   faceNormal, // direction
+      //   faceCenterWorld, // origin
+      //   offsetDistance, // length
+      //   0x00ff00 // color
+      // );
+      // scene.add(normalArrow);
+
+      // // 3. Offset origin - blue sphere
+      // const offsetHelper = new THREE.Mesh(
+      //   new THREE.SphereGeometry(0.01),
+      //   new THREE.MeshBasicMaterial({ color: "blue" })
+      // );
+      // offsetHelper.position.copy(offsetOrigin);
+      // scene.add(offsetHelper);
+
+      // Set snap model
+      useSTLStore.getState().setPendingAttach({
+        shape: "I",
+        faceNormal,
+        //basePoint: offsetOrigin.clone(),
+        //dragPlane,
+        u,
+        v,
+        size,
+        uLimit,
+        vLimit,
+        rotation: mesh.rotation.clone(),
+        faceCenterWorld,
+        offsetDir,
+      });
+      // useSTLStore.getState().setSnapModel({
+      //   geom,
+      //   shape: "Z",
+      //   faceNormal,
+      //   basePoint: offsetOrigin.clone(),
+      //   dragPlane,
+      //   u,
+      //   v,
+      //   size,
+      //   uLimit,
+      //   vLimit,
+      //   rotation: mesh.rotation.clone(),
+      // });
     },
     [geom]
   );
-
-  // const onFaceClick = useCallback(
-  //   (e) => {
-  //     e.stopPropagation();
-
-  //     const mesh = meshRef.current;
-  //     if (!mesh) return;
-
-  //     // Get the clicked face's world normal
-  //     const faceNormal = e.face.normal
-  //       .clone()
-  //       .transformDirection(mesh.matrixWorld) // converts to world space
-  //       .normalize();
-
-  //     // Get the intersection point in world space
-  //     const clickPoint = e.point.clone();
-
-  //     // Offset slightly in the direction of the face
-  //     const OFFSET = 0.001;
-  //     const spawnPos = clickPoint
-  //       .clone()
-  //       .add(faceNormal.clone().multiplyScalar(OFFSET));
-
-  //     useSTLStore.getState().addModel(spawnPos.x, spawnPos.y, spawnPos.z, geom);
-  //   },
-  //   [geom]
-  // );
 
   const plusPos = useMemo(() => {
     if (hover === null || !size || !center) return null;
@@ -204,9 +204,9 @@ export default function IModel({ geom, position, shape }) {
       <mesh
         ref={meshRef}
         geometry={geom}
-        scale={[0.001, 0.001, 0.001]}
+        //scale={[0.001, 0.001, 0.001]}
         position={position}
-        // rotation={[0, 0, Math.PI / 2]} // ✅ Apply rotation here
+        rotation={rotation} // ✅ Apply rotation here
       >
         <meshStandardMaterial color="hotpink" side={THREE.DoubleSide} />
       </mesh>
@@ -217,7 +217,7 @@ export default function IModel({ geom, position, shape }) {
           position={center}
           onPointerMove={onMove}
           onPointerOut={onOut}
-          // rotation={[0, 0, Math.PI / 2]}
+          rotation={rotation}
           onClick={onFaceClick}
         >
           {[...Array(6)].map((_, i) => (
@@ -225,7 +225,52 @@ export default function IModel({ geom, position, shape }) {
           ))}
         </mesh>
       )}
-
     </>
   );
+}
+
+function getWorldFaceCenterFromBoundingBox(mesh, faceNormalWorld) {
+  // Local bounding box
+  mesh.geometry.computeBoundingBox();
+  const bbox = mesh.geometry.boundingBox.clone();
+
+  // Box center and size in local space
+  const center = new Vector3();
+  bbox.getCenter(center);
+
+  const size = new Vector3();
+  bbox.getSize(size);
+
+  // Face direction options in local space
+  const directions = [
+    new Vector3(1, 0, 0),
+    new Vector3(-1, 0, 0),
+    new Vector3(0, 1, 0),
+    new Vector3(0, -1, 0),
+    new Vector3(0, 0, 1),
+    new Vector3(0, 0, -1),
+  ];
+
+  // Transform directions to world space
+  const worldMatrix = mesh.matrixWorld;
+  let bestDir = new Vector3();
+  let bestDot = -Infinity;
+
+  for (const dir of directions) {
+    const worldDir = dir.clone().transformDirection(worldMatrix);
+    const dot = faceNormalWorld.dot(worldDir);
+    if (dot > bestDot) {
+      bestDot = dot;
+      bestDir.copy(dir); // keep local-space direction
+    }
+  }
+
+  // Move from center to face center in local space
+  const localFaceCenter = center
+    .clone()
+    .add(bestDir.multiply(size).multiplyScalar(0.5));
+
+  // Convert to world space
+  const worldFaceCenter = localFaceCenter.clone().applyMatrix4(worldMatrix);
+  return worldFaceCenter;
 }

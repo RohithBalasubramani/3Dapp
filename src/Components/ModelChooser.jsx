@@ -5,7 +5,7 @@ import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { useState } from "react";
 import { useSTLStore } from "@/store/stlStore";
 import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader";
-
+import * as THREE from "three";
 export default function ModelChooser() {
   /* global store slices */
   const fileList = ["/models/I.PLY", "/models/demo2.PLY", "/models/Z.PLY"];
@@ -26,43 +26,48 @@ export default function ModelChooser() {
       geom.computeVertexNormals();
       geom.computeBoundingBox();
       geom.center();
-      geom.scale(0.001, 0.001, 0.001)
+      geom.scale(0.001, 0.001, 0.001);
+
+      const bbox = new THREE.Box3().setFromBufferAttribute(
+        geom.attributes.position
+      );
+
+      const size = new THREE.Vector3();
+      bbox.getSize(size);
+
+      console.log("size", size);
 
       /* 🔑 grab the *current* pendingAttach safely */
       const attach = useSTLStore.getState().pendingAttach;
       const newShape = fileUrl.split("/")[2].split(".")[0];
+      const offsetDistance = Math.max(size.x, size.y, size.z) / 2;
+
+      console.log("offset", offsetDistance);
+
+      // Final offset origin
+      const offsetOrigin = attach.faceCenterWorld
+        .clone()
+        .add(attach.offsetDir.multiplyScalar(offsetDistance));
+
       let pos = [];
-      if (attach && attach.worldCenter) {
-        // if (attach.currShape === "Z" && newShape === "Z") {
-        //   if (attach.negativeX) {
-        //     pos = [
-        //       attach.worldCenter.x - attach.size.x * 0.001,
-        //       attach.worldCenter.y,
-        //       attach.worldCenter.z + attach.size.z * 0.001 * (2 / 3) + 0.03,
-        //     ];
-        //   } else {
-        //     pos = [
-        //       attach.worldCenter.x + attach.size.x * 0.001,
-        //       attach.worldCenter.y,
-        //       attach.worldCenter.z - attach.size.z * 0.001 * (2 / 3) - 0.03,
-        //     ];
-        //   }
-        // } else if (attach.currShape === "Z" && newShape === "I") {
-        //   if (attach.negativeX) {
-        //     pos = [
-        //       attach.worldCenter.x - attach.size.x * 0.001,
-        //       attach.worldCenter.y,
-        //       attach.worldCenter.z + attach.size.z * 0.001 * (2 / 3) + 0.03,
-        //     ];
-        //   } else {
-        //     pos = [
-        //       attach.worldCenter.x + attach.size.x * 0.001,
-        //       attach.worldCenter.y,
-        //       attach.worldCenter.z - attach.size.z * 0.001 * (2 / 3) - 0.03,
-        //     ];
-        //   }
-        // }
-        addModel(attach.worldCenter.x*0.001, attach.worldCenter.y*0.001 ,attach.worldCenter.z*0.001 , geom, newShape);
+      if (attach) {
+        useSTLStore.getState().setSnapModel({
+          geom,
+          shape: newShape,
+          faceNormal: attach.faceNormal,
+          basePoint: attach.basePoint,
+          dragPlane: attach.dragPlane,
+          u: attach.u,
+          v: attach.v,
+          size: size,
+          uLimit: attach.uLimit,
+          vLimit: attach.vLimit,
+          rotation: attach.rotation,
+          faceCenterWorld: attach.faceCenterWorld,
+          offsetDir: attach.offsetDir,
+          offsetOrigin,
+        });
+        // addModel(attach.worldCenter.x*0.001, attach.worldCenter.y*0.001 ,attach.worldCenter.z*0.001 , geom, newShape);
         clearPending(null);
       }
 
