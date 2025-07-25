@@ -12,6 +12,10 @@ import { Physics } from "@react-three/cannon";
 import { useSTLStore } from "@/store/stlStore";
 import BoundingBox from "./BoundingBox";
 import Scales from "./Scales";
+import { SnappingCursor } from "./SnappingCursor";
+import STLModel, { Cursor } from "./STLModel";
+import Models from "./Models";
+import IModel from "./IPLYModel";
 
 /** AssetControls – in its own Leva store (assetStore) */
 function AssetControls({ model, room, update, store }) {
@@ -225,7 +229,7 @@ export default function Workspace() {
 
         <React.Suspense fallback={null}>
           {/* ghost */}
-          {dragging && draggedModel && (
+          {/* {dragging && draggedModel && (
             <mesh
               geometry={draggedModel.geometry}
               position={draggedModel.position}
@@ -239,10 +243,10 @@ export default function Workspace() {
                 depthTest={false}
               />
             </mesh>
-          )}
+          )} */}
 
           {/* placed models */}
-          {models.map((m) => (
+          {/* {models.map((m) => (
             <mesh
               key={m.id}
               geometry={m.geometry}
@@ -266,7 +270,33 @@ export default function Workspace() {
                 }
               />
             </mesh>
-          ))}
+          ))} */}
+          {models.map((model, i) => {
+            console.log(models)
+            if (model.shape === "I") {
+              return (
+                <IModel
+                  key={i}
+                  position={model.position}
+                  geom={model.geometry}
+                  shape={model.shape}
+                  rotation={model.rotation}
+                />
+              );
+            } else if (model.shape === "Z") {
+              return (
+                <STLModel
+                  key={i}
+                  position={model.position}
+                  geom={model.geometry}
+                  shape={model.shape}
+                  rotation={model.rotation}
+                />
+              );
+            }
+          })}
+          <SnappingCursor />
+          <Cursor />
         </React.Suspense>
 
         <BoundingBox

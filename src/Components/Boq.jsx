@@ -49,10 +49,8 @@ export default function Boq() {
   return (
     <div
       style={{
-        position: "absolute",
         bottom: 10,
         left: 10,
-        background: "rgba(255,255,255,0.9)",
         padding: 12,
         borderRadius: 6,
         fontSize: 14,
